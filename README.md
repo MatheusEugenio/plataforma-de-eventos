@@ -2,7 +2,7 @@
 
 > Uma base Java para modelar a organização de eventos, palestras, participantes e suas regras de negócio.
 
-[Visão geral](#visão-geral) · [Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Como executar](#como-executar) · [Estado atual](#estado-atual) · [Estrutura do projeto](#estrutura-do-projeto)
+[Visão geral](#visão-geral) · [Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Como executar](#como-executar) · [Estado atual](#estado-atual) · [Requisitos](docs/REQUISITOS.md) · [Estrutura do projeto](#estrutura-do-projeto)
 
 ---
 
@@ -141,6 +141,8 @@ Este repositório é uma **implementação em desenvolvimento da camada de domí
 - O ponto de entrada [`Main`](src/Main.java) está vazio.
 - Não há configuração de suíte de testes automatizados no projeto no momento.
 - Os observadores de e-mail, telefone e WhatsApp apenas imprimem mensagens no console; não enviam comunicações por serviços externos.
+
+Os requisitos funcionais e as limitações conhecidas estão documentados em [`docs/REQUISITOS.md`](docs/REQUISITOS.md).
 
 ## Estrutura do projeto
 
