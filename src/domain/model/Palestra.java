@@ -4,6 +4,7 @@ import domain.valueobject.IntervaloDeTempo;
 import domain.valueobject.Name;
 import domain.model.enums.StatusPalestra;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -30,8 +31,8 @@ public class Palestra {
         this.palestrante = validatePalestrante(builder.palestrante);
         this.nome = validateName(builder.nome);
 
-        validateCapacidade(limiteDeParticipantes);
         this.limiteDeParticipantes = salaDaPalestra.getCapacidadeDaSala();
+        validateCapacidade(this.limiteDeParticipantes);
 
         this.status = StatusPalestra.VAZIA;
         this.inscritosNaPalestra = new HashSet<>();
@@ -44,16 +45,24 @@ public class Palestra {
     public void inscreverNaPalestra(Participante participante){
         Objects.requireNonNull(participante, "Erro: o participante é nulo.");
 
-        if (this.inscritosNaPalestra.size() == limiteDeParticipantes){
+        if (status == StatusPalestra.EM_ANDAMENTO || status == StatusPalestra.FINALIZADA) {
+            throw new IllegalStateException("Não é possível inscrever participantes em uma palestra iniciada ou finalizada.");
+        }
+
+        if (this.inscritosNaPalestra.contains(participante)) {
+            throw new IllegalArgumentException("O participante já está inscrito na palestra!");
+        }
+
+        if (this.inscritosNaPalestra.size() >= limiteDeParticipantes){
             throw new IllegalArgumentException("A palestra já está lotada!");
         }
 
-        if (!this.inscritosNaPalestra.add(participante)) {
-            throw new IllegalArgumentException("O participante já está inscrito na palestra!");
-        }
+        this.inscritosNaPalestra.add(participante);
+        this.status = this.inscritosNaPalestra.size() == limiteDeParticipantes
+                ? StatusPalestra.LOTADA : StatusPalestra.PREENCHENDO;
     }
 
-    public void mudarStatus(StatusPalestra status){this.status = status;}
+    public void mudarStatus(StatusPalestra status){this.status = Objects.requireNonNull(status);}
 
     public boolean conflitaComAlgumaPalestra(IntervaloDeTempo intervaloNovo){
         return horario.conflitaCom(intervaloNovo);
@@ -63,8 +72,11 @@ public class Palestra {
         return horario.contem(horarioEstabelecido);
     }
 
-    public Set<Participante> getInscritosNaPalestra() {return inscritosNaPalestra;}
+    public Set<Participante> getInscritosNaPalestra() {
+        return Collections.unmodifiableSet(new HashSet<>(inscritosNaPalestra));
+    }
     public IntervaloDeTempo getHorario() {return horario;}
+    public StatusPalestra getStatus() {return status;}
 
     private Sala validateSala(Sala sala){return Objects.requireNonNull(sala, "Erro: o objeto de sala é nulo.");}
     private IntervaloDeTempo validateDuracao(IntervaloDeTempo tempo){ return Objects.requireNonNull(tempo, "Erro: o tempo é nulo.");}

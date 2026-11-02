@@ -21,9 +21,7 @@ public class ParticipanteRepository {
 
     public Participante findById(Long id){
 
-        if (id <= 0){
-            throw new IllegalArgumentException("Erro: o id não pode ser negativo.");
-        }
+        validarId(id);
 
         if (!participantesCadastrados.containsKey(id)){
             throw new IllegalArgumentException("Erro: esse Id não existe no banco.");
@@ -32,8 +30,20 @@ public class ParticipanteRepository {
         return participantesCadastrados.get(id);
     }
 
+    public boolean existsById(Long id) {
+        validarId(id);
+        return participantesCadastrados.containsKey(id);
+    }
+
     public List<Participante> findAll(){
         return new ArrayList<>(participantesCadastrados.values());
+    }
+
+    private void validarId(Long id) {
+        Objects.requireNonNull(id, "Erro: o id não pode ser nulo.");
+        if (id <= 0) {
+            throw new IllegalArgumentException("Erro: o id deve ser maior que zero.");
+        }
     }
 
 }

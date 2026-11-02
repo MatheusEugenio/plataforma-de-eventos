@@ -80,13 +80,6 @@ public class ParticipanteService {
     }
 
     public boolean participanteExiste(Long IDParticipante){
-
-        Participante participanteAlvo = participanteRepository.findById(IDParticipante);
-
-        if (participanteAlvo == null){
-            return false;
-        }
-
-        return true;
+        return participanteRepository.existsById(IDParticipante);
     }
 }

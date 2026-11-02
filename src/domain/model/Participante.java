@@ -70,12 +70,12 @@ public class Participante implements Observer {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Participante that = (Participante) o;
-        return Objects.equals(ID, that.ID) && Objects.equals(name, that.name) && Objects.equals(email, that.email) && Objects.equals(cargo, that.cargo) && nivelDeAcesso == that.nivelDeAcesso && Objects.equals(historicoDeEventos, that.historicoDeEventos) && status == that.status;
+        return Objects.equals(ID, that.ID);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ID, name, email, cargo, nivelDeAcesso, historicoDeEventos, status);
+        return Objects.hash(ID);
     }
     public NiveisDeAcesso getNivelDeAcesso(){return this.nivelDeAcesso;}
     public Long getID(){return this.ID;}

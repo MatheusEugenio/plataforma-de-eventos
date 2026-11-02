@@ -2,6 +2,7 @@ package domain.model;
 
 import domain.exception.ParticipanteInvalidoException;
 import domain.model.enums.NiveisDeAcesso;
+import domain.model.enums.StatusParticipante;
 import domain.valueobject.IntervaloDeTempo;
 import domain.valueobject.Name;
 import domain.policy.PoliticaCancelamento;
@@ -79,11 +80,19 @@ public class Evento {
 
         Objects.requireNonNull(participante, "Erro: o participante é nulo");
 
+        if (status == StatusEvento.CANCELADO || status == StatusEvento.FINALIZADO) {
+            throw new IllegalStateException("Não é possível inscrever participantes em um evento cancelado ou finalizado.");
+        }
+
+        if (participante.getStatus() != StatusParticipante.ATIVO) {
+            throw new ParticipanteInvalidoException("Erro: participantes inativos não podem se inscrever.");
+        }
+
         if (listaDePalestras.isEmpty()) {
             throw new IllegalArgumentException("Erro: não haverá palestras neste evento.");
         }
 
-        if (listaDeInscritos.contains(participante)){
+        if (listaDeInscritos.contains(participante) || listaDeEspera.contains(participante)){
             throw new ParticipanteInvalidoException("Não pode inscrever participantes repetidos!");
         }
 
@@ -95,7 +104,7 @@ public class Evento {
 
         if (listaDeInscritos.size() >= capacidadeMaxima){
             System.out.println("A lista de participantes já está lotada! O participante '"+participante+"' foi movido para a lista de espera.");
-            promoverParaListaDeEspera(participante);
+            listaDeEspera.add(participante);
             return;
         }
 
@@ -103,8 +112,12 @@ public class Evento {
         this.listaDeInscritos.add(participante);
     }
 
-    public void cancelarInscricaoDoParticipanteNoEvento(Participante participante){
+    public synchronized void cancelarInscricaoDoParticipanteNoEvento(Participante participante){
         Objects.requireNonNull(participante, "Erro: o participante é nulo.");
+
+        if (listaDeEspera.remove(participante)) {
+            return;
+        }
 
         if (!this.listaDeInscritos.contains(participante)){
             throw new IllegalArgumentException("Erro: particpante não está inscrito.");
@@ -112,7 +125,7 @@ public class Evento {
 
         participante.removerEventoDoHistorico(this);
         this.listaDeInscritos.remove(participante);
-        promoverParaListaDeEspera(participante);
+        promoverProximoDaListaDeEspera();
     }
 
     public void adicionarPalestra(Palestra palestra){
@@ -134,9 +147,7 @@ public class Evento {
 
     public void alterarData(IntervaloDeTempo novaData){
         Objects.requireNonNull(novaData, "Erro: a nova data é nula.");
-
-        this.dataDeDuracaoDoEvento.setInicio(novaData.getInicio());
-        this.dataDeDuracaoDoEvento.setFim(novaData.getFim());
+        this.dataDeDuracaoDoEvento = new IntervaloDeTempo(novaData.getInicio(), novaData.getFim());
     }
 
     private boolean validarNivelDeAcessoDoParticipante(NiveisDeAcesso nivelDeAcessoDoParticipante){
@@ -152,17 +163,38 @@ public class Evento {
         return true;
     }
 
-    private void promoverParaListaDeEspera(Participante participante){
-        if (this.listaDeEspera.contains(participante)){
-            throw new IllegalArgumentException("Erro: participante '"+participante+"' já está na lista de espera.");
-        }
+    private void promoverProximoDaListaDeEspera(){
+        while (!listaDeEspera.isEmpty()) {
+            Participante proximo = listaDeEspera.peek();
+            if (proximo.getStatus() != StatusParticipante.ATIVO
+                    || !validarNivelDeAcessoDoParticipante(proximo.getNivelDeAcesso())) {
+                listaDeEspera.remove();
+                continue;
+            }
 
-        this.listaDeEspera.add(participante);
+            listaDeEspera.remove();
+            proximo.adicionarEventoAoHistorico(this);
+            listaDeInscritos.add(proximo);
+            return;
+        }
     }
 
     public String getNomeEvento() {return nomeEvento.getValue();}
     public Long getID(){return ID;}
-    public void setStatus(StatusEvento status){this.status = status;}
+    public String getDescricao() {return descricao;}
+    public TipoEvento getTipo() {return tipo;}
+    public StatusEvento getStatus() {return status;}
+    public int getCapacidadeMaxima() {return capacidadeMaxima;}
+    public Set<Participante> getParticipantesInscritos() {
+        return Collections.unmodifiableSet(new HashSet<>(listaDeInscritos));
+    }
+    public List<Participante> getListaDeEspera() {
+        return Collections.unmodifiableList(new ArrayList<>(listaDeEspera));
+    }
+    public List<Palestra> getPalestras() {
+        return Collections.unmodifiableList(new ArrayList<>(listaDePalestras));
+    }
+    public void setStatus(StatusEvento status){this.status = Objects.requireNonNull(status);}
     public LocalDateTime getHorarioDeComecoDoEvento(){return this.dataDeDuracaoDoEvento.getInicio();}
 
     public static class Builder {
@@ -199,8 +231,8 @@ public class Evento {
 
         public Builder capacidadeMaxima(int capacidade){
 
-            if (capacidade <= 10){
-                throw new IllegalArgumentException("Erro: capacidade deve ser um positivo.");
+            if (capacidade <= 0){
+                throw new IllegalArgumentException("Erro: capacidade deve ser maior que zero.");
             }
 
             this.capacidadeMaxima = capacidade;
@@ -208,6 +240,13 @@ public class Evento {
         }
 
         public Evento build(){
+            Objects.requireNonNull(nomeEvento, "Erro: o nome do evento é obrigatório.");
+            Objects.requireNonNull(descricao, "Erro: a descrição do evento é obrigatória.");
+            Objects.requireNonNull(tipo, "Erro: o tipo do evento é obrigatório.");
+            Objects.requireNonNull(dataDeDuracaoDoEvento, "Erro: o período do evento é obrigatório.");
+            if (capacidadeMaxima <= 0) {
+                throw new IllegalArgumentException("Erro: capacidade deve ser maior que zero.");
+            }
             return new Evento(this);
         }
     }

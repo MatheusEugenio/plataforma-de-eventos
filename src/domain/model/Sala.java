@@ -22,6 +22,7 @@ public class Sala {
         this.capacidadeDaSala = capacidadeDaSala;
         this.nome = nome;
         this.ID = ID;
+        this.status = StatusDaSala.DESOCUPADA;
     }
 
     public void ocuparSala(){
@@ -34,8 +35,8 @@ public class Sala {
 
     public void usarSala(){
 
-        if (this.status == StatusDaSala.EM_USO){
-            throw new IllegalArgumentException("A sala já está em uso.");
+        if (this.status != StatusDaSala.OCUPADA){
+            throw new IllegalArgumentException("A sala precisa estar ocupada antes de ser usada.");
         }
         this.status = StatusDaSala.EM_USO;
     }
@@ -49,6 +50,7 @@ public class Sala {
     }
 
     public int getCapacidadeDaSala() {return capacidadeDaSala;}
+    public StatusDaSala getStatus() {return status;}
     private void validateID(Long id) {Objects.requireNonNull(id, "Erro, ID é não pode ser nulo.");}
     private void validateName(Name name) {Objects.requireNonNull(name, "Erro: nome passado para participante é nulo.");}
     private void validadeCapacidade(int capacidadeDaSala) {if (capacidadeDaSala <= 0){ throw new IllegalArgumentException("Erro: a capacidade máxima da sala não pode ser menor ou igual a 0."); }}
